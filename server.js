@@ -143,7 +143,7 @@ app.post(
         ...(filters.length ? ["-vf", filters.join(",")] : []),
         ...(speed !== 1    ? ["-af", `atempo=${Math.min(Math.max(speed, 0.5), 2)}`] : []),
         "-c:v", "libx264",
-        "-preset", "fast",
+        "-preset", "ultrafast",
         "-crf", "22",
         "-c:a", "aac",
         "-b:a", "128k",
