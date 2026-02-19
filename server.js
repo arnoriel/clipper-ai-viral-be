@@ -23,12 +23,8 @@ import multer            from "multer";
 const execAsync = promisify(exec);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const COOKIES_PATH = path.join(__dirname, "cookies.txt");
-const YTDLP_BASE_CMD = `
-yt-dlp 
---extractor-args "youtube:player_client=android,web"
---user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
---no-check-certificates
-`;
+const YTDLP_BASE_CMD = 
+  `yt-dlp --extractor-args "youtube:player_client=android,web" --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" --no-check-certificates`;
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
