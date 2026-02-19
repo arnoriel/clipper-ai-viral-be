@@ -22,6 +22,7 @@ import multer            from "multer";
 
 const execAsync = promisify(exec);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const COOKIES_PATH = path.join(__dirname, "cookies.txt");
 const app  = express();
 const PORT = process.env.PORT || 3001;
 
@@ -94,7 +95,7 @@ app.get("/api/video-info", async (req, res) => {
 
   try {
     const { stdout } = await execAsync(
-      `yt-dlp --dump-json --no-playlist "${url}"`,
+      `yt-dlp --cookies "${COOKIES_PATH}" --dump-json --no-playlist "${url}"`, // Tambah --cookies
       { timeout: 30000 }
     );
     const info = JSON.parse(stdout);
@@ -102,7 +103,7 @@ app.get("/api/video-info", async (req, res) => {
     let transcript = "";
     try {
       await execAsync(
-        `yt-dlp --write-auto-sub --sub-format vtt --skip-download --no-playlist -o "${SYS_TEMP}/%(id)s.%(ext)s" "${url}"`,
+        `yt-dlp --cookies "${COOKIES_PATH}" --write-auto-sub --sub-format vtt --skip-download --no-playlist -o "${SYS_TEMP}/%(id)s.%(ext)s" "${url}"`,
         { timeout: 30000 }
       );
       vttFile = path.join(SYS_TEMP, `${info.id}.en.vtt`);
@@ -149,10 +150,10 @@ app.post("/api/download", async (req, res) => {
   try {
     console.log(`📥 Downloading (to system temp): ${safeId}`);
     await execAsync(
-      `yt-dlp -f "bestvideo[ext=mp4][height<=1080]+bestaudio[ext=m4a]/best[ext=mp4]/best" \
-       --merge-output-format mp4 \
-       -o "${tempPath}" \
-       --no-playlist "${url}"`,
+      `yt-dlp --cookies "${COOKIES_PATH}" -f "bestvideo[ext=mp4][height<=1080]+bestaudio[ext=m4a]/best[ext=mp4]/best" \
+      --merge-output-format mp4 \
+      -o "${tempPath}" \
+      --no-playlist "${url}"`,
       { timeout: 300_000 }
     );
 
