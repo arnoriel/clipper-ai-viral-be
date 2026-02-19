@@ -26,7 +26,7 @@ const PORT = process.env.PORT || 3001;
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://viral-clipper-ai.vercel.app/"
+    "https://viral-clipper-ai.vercel.app"
   ]
 }));
 
@@ -159,7 +159,7 @@ app.post(
       res.setHeader("Content-Type", "video/mp4");
       res.setHeader("X-File-Name", `clip_${Date.now()}.mp4`);
       res.setHeader("Access-Control-Expose-Headers", "X-File-Name");
-      res.setHeader("Transfer-Encoding", "chunked");
+      // res.setHeader("Transfer-Encoding", "chunked");
 
       ffmpeg.stdout.pipe(res);
 
