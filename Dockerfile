@@ -1,12 +1,14 @@
 FROM node:18
 
-# Install dependencies + Node.js runtime untuk yt-dlp
+# Install dependencies + Deno (untuk solve tantangan YouTube)
 RUN apt-get update && \
-    apt-get install -y ffmpeg python3 python3-pip nodejs npm && \
-    pip install --break-system-packages yt-dlp
+    apt-get install -y ffmpeg python3 python3-pip curl unzip && \
+    curl -fsSL https://deno.land/install.sh | sh && \
+    pip install -U --break-system-packages yt-dlp
 
-# Set environment variable untuk yt-dlp menggunakan Node.js
-ENV YT_DLP_JS_RUNTIME=node
+# Tambahkan Deno ke PATH
+ENV DENO_INSTALL="/root/.deno"
+ENV PATH="$DENO_INSTALL/bin:$PATH"
 
 WORKDIR /app
 
