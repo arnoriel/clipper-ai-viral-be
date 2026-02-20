@@ -22,6 +22,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app  = express();
 const PORT = process.env.PORT || 3001;
 
+// ─── Font Setup ───────────────────────────────────────────────────────────────
+const FONT_DIR = path.join(__dirname, "fonts");
+const OPEN_SANS_BOLD_PATH = path.join(FONT_DIR, "OpenSans-Bold.ttf");
+
+// Verify font exists on startup
+if (!fs.existsSync(OPEN_SANS_BOLD_PATH)) {
+  console.warn("⚠️  OpenSans-Bold.ttf not found. Download from Google Fonts.");
+  console.warn(`   Expected path: ${OPEN_SANS_BOLD_PATH}`);
+  console.warn(`   Subtitle rendering will use system default font.`);
+}
+
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(cors({
   origin: [
@@ -240,6 +251,36 @@ function buildFFmpegFilters(edits) {
         .replace(/:/g, "\\:");
       filters.push(
         `drawtext=text='${safeText}':fontsize=${size}:fontcolor=${color}:x=${x}:y=${y}${enable}`
+      );
+    }
+  }
+
+  // ─── NEW: Per-word subtitle rendering with viral styling ─────────────────────
+  if (edits.subtitles?.length) {
+    for (const sub of edits.subtitles) {
+      const safeWord = (sub.word + (sub.emoji || ""))
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/:/g, "\\:");
+
+      const color = (sub.color || "#FFFFFF").replace("#", "0x");
+      const fontSize = 48; // Fixed size for subtitles (viral style)
+
+      // Position: center-bottom (x: center, y: 85% from top)
+      const x = "(w-text_w)/2";
+      const y = "h*0.85";
+
+      // Timing: precise per-word display
+      const enable = `:enable='between(t,${sub.startTime.toFixed(3)},${sub.endTime.toFixed(3)})'`;
+
+      // Font file path (use Open Sans Bold if available, fallback to system)
+      const fontfile = fs.existsSync(OPEN_SANS_BOLD_PATH)
+        ? `:fontfile='${OPEN_SANS_BOLD_PATH}'`
+        : "";
+
+      // Viral-style text: white/yellow with black outline (3px thick)
+      filters.push(
+        `drawtext${fontfile}:text='${safeWord}':fontsize=${fontSize}:fontcolor=${color}:borderw=3:bordercolor=black:x=${x}:y=${y}${enable}`
       );
     }
   }
