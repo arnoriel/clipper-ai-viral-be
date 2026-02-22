@@ -209,6 +209,7 @@ app.post(
 function buildFFmpegFilters(edits) {
   const filters = [];
 
+  // 1. Aspect Ratio / Crop
   if (edits.aspectRatio && edits.aspectRatio !== "original") {
     const [rw, rh] = edits.aspectRatio.split(":").map(Number);
     const cropW = `if(gt(iw/ih\\,${rw}/${rh})\\,trunc(ih*${rw}/${rh}/2)*2\\,iw)`;
@@ -216,32 +217,42 @@ function buildFFmpegFilters(edits) {
     filters.push(`crop=${cropW}:${cropH}:(iw-out_w)/2:(ih-out_h)/2`);
   }
 
+  // 2. Color EQ
   const eq = [];
-  if (edits.brightness != null && edits.brightness !== 0) eq.push(`brightness=${edits.brightness}`);
-  if (edits.contrast   != null && edits.contrast   !== 0) eq.push(`contrast=${(1 + edits.contrast).toFixed(4)}`);
-  if (edits.saturation != null && edits.saturation !== 0) eq.push(`saturation=${(1 + edits.saturation).toFixed(4)}`);
+  if (edits.brightness != null) eq.push(`brightness=${edits.brightness}`);
+  if (edits.contrast != null) eq.push(`contrast=${(1 + edits.contrast).toFixed(4)}`);
+  if (edits.saturation != null) eq.push(`saturation=${(1 + edits.saturation).toFixed(4)}`);
   if (eq.length) filters.push(`eq=${eq.join(":")}`);
 
+  // 3. Speed
   if (edits.speed && edits.speed !== 1) {
     filters.push(`setpts=${(1 / edits.speed).toFixed(6)}*PTS`);
   }
 
+  // 4. Advanced Text Overlays (Layered)
   if (edits.textOverlays?.length) {
-    for (const t of edits.textOverlays) {
-      const color    = (t.color || "#FFFFFF").replace("#", "0x");
-      const size     = t.fontSize || 36;
-      const x        = t.x   != null ? `w*${t.x}` : "(w-text_w)/2";
-      const y        = t.y   != null ? `h*${t.y}` : "h*0.85";
-      const enable   = t.startSec != null && t.endSec != null
-        ? `:enable='between(t,${t.startSec},${t.endSec})'` : "";
+    edits.textOverlays.forEach((t) => {
+      const color = (t.color || "#FFFFFF").replace("#", "00") + "@@1.0"; // FFmpeg color format
+      const fontSize = t.fontSize || 36;
+      
+      // Hitung koordinat berdasarkan persentase (0-1) dari lebar/tinggi video
+      const x = `(w*${t.x})`;
+      const y = `(h*${t.y})`;
+      
+      // Durasi: enable='between(t, start, end)'
+      // Jika startSec null, anggap muncul dari awal clip (t=0 relatif terhadap clip)
+      const start = t.startSec || 0;
+      const end = t.endSec || 9999;
+      
       const safeText = t.text
         .replace(/\\/g, "\\\\")
         .replace(/'/g, "\\'")
         .replace(/:/g, "\\:");
+
       filters.push(
-        `drawtext=text='${safeText}':fontsize=${size}:fontcolor=${color}:x=${x}:y=${y}${enable}`
+        `drawtext=text='${safeText}':fontsize=${fontSize}:fontcolor=${t.color.replace('#', '0x')}:x=${x}:y=${y}:enable='between(t,${start},${end})'`
       );
-    }
+    });
   }
 
   return filters;
